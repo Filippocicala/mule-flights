@@ -12,8 +12,11 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<db:config name="Database_Config" doc:name="Database Config" doc:id="dacd2a1b-7537-413b-a665-2c8de329cbf6" >
 		<db:my-sql-connection host="mudb.learn.mulesoft.com" port="3306" user="mule" password="mule" database="training" />
 	</db:config>
-	<flow name="GET\flights" doc:id="760e794b-fca1-4557-acec-b6951a96ae0e" >
-		<http:listener doc:name="GET /hello" doc:id="9858ccd0-3f40-4e65-9566-d3a10c3e0276" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="GET"/>
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="8c22cfb8-8bb7-4acb-aa76-0a5d5156b4a4" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="GetAllFlights" doc:id="760e794b-fca1-4557-acec-b6951a96ae0e" >
+		<http:listener doc:name="GET /hello" doc:id="9858ccd0-3f40-4e65-9566-d3a10c3e0276" config-ref="HTTP_Listener_config" path="/flights{ID}" allowedMethods="GET"/>
 		<db:select doc:name="Select all fights" doc:id="c293d076-e171-403b-9d34-cc590ea599e1" config-ref="Database_Config">
 			<db:sql ><![CDATA[SELECT * FROM american]]></db:sql>
 		</db:select>
@@ -26,6 +29,39 @@ payload
 ]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<logger level="INFO" doc:name="Log Hello" doc:id="8bafa5d6-217f-477f-8477-05e65f271eef" message="Ciao Mondo!!!" />
+		<logger level="WARN" doc:name="Log Fetched Fights ID" doc:id="8bafa5d6-217f-477f-8477-05e65f271eef" message="#[payload.ID]" />
+	</flow>
+	<flow name="Copy_of_GetAllFlights" doc:id="721dbb67-b0b8-479e-b217-0db100cc68e2" >
+		<http:listener doc:name="Copy_of_GET /hello" doc:id="f7e53710-1f95-47f7-8159-458d325bf31a" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="GET" />
+		<set-variable value="#[message.attributes.uriParams.ID]" doc:name="Set Fight ID" doc:id="9779aa5f-ac77-415c-b422-7b5061730c67" variableName="fightid"/>
+		<db:select doc:name="Select all fights ID" doc:id="6c458044-7ef9-4a8c-9333-4e036935a25b" config-ref="Database_Config" >
+			<db:sql ><![CDATA[SELECT * FROM american where ID = :ID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{ "ID": vars.flightid }]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Copy_of_Transform Message" doc:id="48d15183-ea31-46cf-90a4-1cf0060ca2fe" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload 
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="WARN" doc:name="Copy_of_Log Fetched Fights ID" doc:id="713f6688-e442-468d-9172-ea46858fd20d" message="#[payload.ID]" />
+	</flow>
+	<flow name="hello-worldFlow" doc:id="c5e33baa-59af-456d-b40b-9bd5c41dcf7d" >
+		<http:listener doc:name="Add" doc:id="c673315c-f374-4f4e-9d44-33811b13793f" config-ref="HTTP_Listener_config1" allowedMethods="POST" path="flights"/>
+		<ee:transform doc:name="Transform Message" doc:id="0cfa9ff1-31d1-4db4-8473-2b3046811c3e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	
+"message": "Flight added (but not really!)"
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 	</flow>
 </mule>
