@@ -6,60 +6,53 @@
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="44373b77-3940-4135-a59e-7035c3b19ce4" >
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c10cc82c-0ec2-4de2-8c19-15d9e0b683ee" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
-	<db:config name="Database_Config" doc:name="Database Config" doc:id="dacd2a1b-7537-413b-a665-2c8de329cbf6" >
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="a88d7b1d-67f7-4724-a9de-a5d0287354c7" >
 		<db:my-sql-connection host="mudb.learn.mulesoft.com" port="3306" user="mule" password="mule" database="training" />
 	</db:config>
-	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="8c22cfb8-8bb7-4acb-aa76-0a5d5156b4a4" >
-		<http:listener-connection host="0.0.0.0" port="8081" />
-	</http:listener-config>
-	<flow name="GetAllFlights" doc:id="760e794b-fca1-4557-acec-b6951a96ae0e" >
-		<http:listener doc:name="GET /hello" doc:id="9858ccd0-3f40-4e65-9566-d3a10c3e0276" config-ref="HTTP_Listener_config" path="/flights{ID}" allowedMethods="GET"/>
-		<db:select doc:name="Select all fights" doc:id="c293d076-e171-403b-9d34-cc590ea599e1" config-ref="Database_Config">
+	<flow name="getAllFlights" doc:id="aa68126a-e957-43fd-a65a-0b8ac6f2c354" >
+		<http:listener doc:name="GET /flights" doc:id="d77c127e-feec-4203-b1f2-dc74cbbd1f15" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="GET"/>
+		<db:select doc:name="Select all flights" doc:id="2ffc99df-06ed-4609-a022-2b549ef65fac" config-ref="Database_Config">
 			<db:sql ><![CDATA[SELECT * FROM american]]></db:sql>
 		</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="205ab978-5d2a-41c0-a124-7d3aade07ed0" >
+		<ee:transform doc:name="Transform Message" doc:id="9993d958-c004-4a5b-b7a8-ac78cabd5ac0" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-payload 
-]]></ee:set-payload>
+payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<logger level="WARN" doc:name="Log Fetched Fights ID" doc:id="8bafa5d6-217f-477f-8477-05e65f271eef" message="#[payload.ID]" />
+		<logger level="INFO" doc:name="Log Fetched Flights ID" doc:id="676bffce-d1b0-4d56-bb53-640f35da7ba1" message="#[payload.ID]" />
 	</flow>
-	<flow name="Copy_of_GetAllFlights" doc:id="721dbb67-b0b8-479e-b217-0db100cc68e2" >
-		<http:listener doc:name="Copy_of_GET /hello" doc:id="f7e53710-1f95-47f7-8159-458d325bf31a" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="GET" />
-		<set-variable value="#[message.attributes.uriParams.ID]" doc:name="Set Fight ID" doc:id="9779aa5f-ac77-415c-b422-7b5061730c67" variableName="fightid"/>
-		<db:select doc:name="Select all fights ID" doc:id="6c458044-7ef9-4a8c-9333-4e036935a25b" config-ref="Database_Config" >
+	<flow name="getFlightByID" doc:id="bb11be18-f80b-42af-a2d0-cb20a7c3c069" >
+		<http:listener doc:name="GET /flights/{ID}" doc:id="6783eda2-f876-44e4-ac16-036843e1c3fb" config-ref="HTTP_Listener_config" path="/flights/{ID}" allowedMethods="GET" />
+		<set-variable value="#[message.attributes.uriParams.ID]" doc:name="Set Flight ID" doc:id="07b350db-f167-4dbf-abd3-73a7a721c19d" variableName="flightid"/>
+		<db:select doc:name="Select flight by ID" doc:id="a6d97e42-2aa7-45b4-8e3f-60dc857dc050" config-ref="Database_Config" >
 			<db:sql ><![CDATA[SELECT * FROM american where ID = :ID]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{ "ID": vars.flightid }]]]></db:input-parameters>
 		</db:select>
-		<ee:transform doc:name="Copy_of_Transform Message" doc:id="48d15183-ea31-46cf-90a4-1cf0060ca2fe" >
+		<ee:transform doc:name="Transform Message" doc:id="3347c9fc-e392-45c0-ad83-37122bf232f3" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-payload 
-]]></ee:set-payload>
+payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<logger level="WARN" doc:name="Copy_of_Log Fetched Fights ID" doc:id="713f6688-e442-468d-9172-ea46858fd20d" message="#[payload.ID]" />
+		<logger level="INFO" doc:name="Log Fetched Flights ID" doc:id="7d94563f-2dd7-4117-a016-e64d776bd8ce" message="#[payload.ID]" />
 	</flow>
-	<flow name="hello-worldFlow" doc:id="c5e33baa-59af-456d-b40b-9bd5c41dcf7d" >
-		<http:listener doc:name="Add" doc:id="c673315c-f374-4f4e-9d44-33811b13793f" config-ref="HTTP_Listener_config1" allowedMethods="POST" path="flights"/>
-		<ee:transform doc:name="Transform Message" doc:id="0cfa9ff1-31d1-4db4-8473-2b3046811c3e" >
+	<flow name="postFlight" doc:id="449c639a-d0de-4e8f-8c0a-5cc6354f6cbc" >
+		<http:listener doc:name="POST /flights" doc:id="cd8eff91-335d-4279-94ac-36191465592e" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="POST"/>
+		<ee:transform doc:name="Transform Message" doc:id="f0d2835d-4e98-4234-8d24-6907104cdd59" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
-output application/java
+output application/json
 ---
 {
-	
-"message": "Flight added (but not really!)"
-
+	"message": "Flight added (but not really!)"
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
