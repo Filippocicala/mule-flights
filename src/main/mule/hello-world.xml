@@ -1,52 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
-	xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c10cc82c-0ec2-4de2-8c19-15d9e0b683ee" >
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="74dbb393-31fb-4a71-9fd4-f85238e3de8a" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
-	<db:config name="Database_Config" doc:name="Database Config" doc:id="a88d7b1d-67f7-4724-a9de-a5d0287354c7" >
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="d943b4ca-9cc4-4db3-96ba-5431bc33a490" >
 		<db:my-sql-connection host="mudb.learn.mulesoft.com" port="3306" user="mule" password="mule" database="training" />
 	</db:config>
-	<flow name="getAllFlights" doc:id="aa68126a-e957-43fd-a65a-0b8ac6f2c354" >
-		<http:listener doc:name="GET /flights" doc:id="d77c127e-feec-4203-b1f2-dc74cbbd1f15" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="GET"/>
-		<db:select doc:name="Select all flights" doc:id="2ffc99df-06ed-4609-a022-2b549ef65fac" config-ref="Database_Config">
-			<db:sql ><![CDATA[SELECT * FROM american]]></db:sql>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="e4ca4cab-3590-4697-baf9-9fcd3b07c82b" basePath="/api/timezone" >
+		<http:request-connection host="worldtimeapi.org" port="80" />
+	</http:request-config>
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="93fc8914-b739-4c16-a266-07235b573ecc" />
+	<flow name="getAllFlights" doc:id="695bb7e8-c353-4b2f-8e16-b58ee87fd3ac" >
+		<http:listener doc:name="GET /flights" doc:id="bd1d126f-79fd-4754-8fe1-dccddd38b162" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="GET"/>
+		<set-variable value="#[message.attributes.queryParams.destination]" doc:name="Set Variable" doc:id="26ac34de-e828-4ec4-8951-24c97e62e48e" variableName="destination"/>
+		<choice doc:name="Choice" doc:id="a6e394b8-bfc9-44fa-a9d4-9da9634a4d27" >
+			<when expression="#[vars.destination == null]">
+				<db:select doc:name="Select all flights" doc:id="c8966d10-46ec-4c43-86bc-4291a878279a" config-ref="Database_Config">
+			<db:sql><![CDATA[SELECT * FROM american]]></db:sql>
 		</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="9993d958-c004-4a5b-b7a8-ac78cabd5ac0" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+			</when>
+			<otherwise >
+				<db:select doc:name="Select all flights with destination" doc:id="ddf697b6-0456-408b-b649-be78dee7cd2a" config-ref="Database_Config">
+					<db:sql ><![CDATA[SELECT * from american where toAirport = :destination]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{ "destination": vars.destination }]]]></db:input-parameters>
+				</db:select>
+			</otherwise>
+		</choice>
+		<flow-ref doc:name="commonTransformAndLog" doc:id="e915ec3d-6b69-427c-b17f-b0afa6847cb8" name="commonTransformAndLog" />
+	</flow>
+	<sub-flow name="commonTransformAndLog" doc:id="1ffe77ea-1b7a-4855-855f-0ade0565d6c1" >
+		<ee:transform doc:name="Transform Message" doc:id="f29bf2e1-63ff-40a6-989f-bd404ce3f5e8">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<logger level="INFO" doc:name="Log Fetched Flights ID" doc:id="676bffce-d1b0-4d56-bb53-640f35da7ba1" message="#[payload.ID]" />
-	</flow>
-	<flow name="getFlightByID" doc:id="bb11be18-f80b-42af-a2d0-cb20a7c3c069" >
-		<http:listener doc:name="GET /flights/{ID}" doc:id="6783eda2-f876-44e4-ac16-036843e1c3fb" config-ref="HTTP_Listener_config" path="/flights/{ID}" allowedMethods="GET" />
-		<set-variable value="#[message.attributes.uriParams.ID]" doc:name="Set Flight ID" doc:id="07b350db-f167-4dbf-abd3-73a7a721c19d" variableName="flightid"/>
-		<db:select doc:name="Select flight by ID" doc:id="a6d97e42-2aa7-45b4-8e3f-60dc857dc050" config-ref="Database_Config" >
+		<logger level="INFO" doc:name="Log Fetched Flights ID" doc:id="f1e5cc67-7479-4f0b-8bfe-98106080dc40" message="#[payload.ID]" />
+	</sub-flow>
+	<flow name="getFlightByID" doc:id="d14be818-44f9-4fbd-b560-72731fac0539" >
+		<http:listener doc:name="GET /flights/{ID}" doc:id="12b72830-cf2d-4f8d-8d33-4276cce74932" config-ref="HTTP_Listener_config" path="/flights/{ID}" allowedMethods="GET" />
+		<set-variable value="#[message.attributes.uriParams.ID]" doc:name="Set Flight ID" doc:id="15835ea2-fec3-4768-862e-378a221759fd" variableName="flightid"/>
+		<validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="3c2e9c40-1a97-4b56-8ab2-57eade3c48dc" config-ref="Validation_Config" value="#[vars.flightid]" minValue="0"/>
+		<db:select doc:name="Select flight by ID" doc:id="716deaba-ab18-4632-99e1-5f839a0e7646" config-ref="Database_Config" >
 			<db:sql ><![CDATA[SELECT * FROM american where ID = :ID]]></db:sql>
 			<db:input-parameters ><![CDATA[#[{ "ID": vars.flightid }]]]></db:input-parameters>
 		</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="3347c9fc-e392-45c0-ad83-37122bf232f3" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<logger level="INFO" doc:name="Log Fetched Flights ID" doc:id="7d94563f-2dd7-4117-a016-e64d776bd8ce" message="#[payload.ID]" />
+		<flow-ref doc:name="commonTransformAndLog" doc:id="0c4e9d01-00d4-4dfa-bc01-d2ac032bd130" name="commonTransformAndLog"/>
 	</flow>
-	<flow name="postFlight" doc:id="449c639a-d0de-4e8f-8c0a-5cc6354f6cbc" >
-		<http:listener doc:name="POST /flights" doc:id="cd8eff91-335d-4279-94ac-36191465592e" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="POST"/>
-		<ee:transform doc:name="Transform Message" doc:id="f0d2835d-4e98-4234-8d24-6907104cdd59" >
+	<flow name="postFlight" doc:id="f4e81e9d-d327-4646-9b52-3a54fda2e4fd" >
+		<http:listener doc:name="POST /flights" doc:id="2116213b-ccf3-4fcc-89e1-a40de8c62182" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="POST"/>
+		<ee:transform doc:name="Transform Message" doc:id="c3dea9ce-38c5-418a-94db-10ab24c0cdfa" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -56,5 +68,9 @@ output application/json
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+	</flow>
+	<flow name="hello-worldFlow" doc:id="3a0da799-c409-4c85-82a5-9aebb32824a1" >
+		<http:listener doc:name="GET /time" doc:id="233dedb2-17e4-4d48-a0e5-054403442257" config-ref="HTTP_Listener_config" path="/time" allowedMethods="GET"/>
+		<http:request method="GET" doc:name="Request" doc:id="137e5ced-90a3-45ac-8770-15f517a68a8e" config-ref="HTTP_Request_configuration" path="/" responseTimeout="300000"/>
 	</flow>
 </mule>
