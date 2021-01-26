@@ -7,18 +7,8 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="74dbb393-31fb-4a71-9fd4-f85238e3de8a" >
-		<http:listener-connection host="0.0.0.0" port="8081" />
-	</http:listener-config>
-	<db:config name="Database_Config" doc:name="Database Config" doc:id="d943b4ca-9cc4-4db3-96ba-5431bc33a490" >
-		<db:my-sql-connection host="mudb.learn.mulesoft.com" port="3306" user="mule" password="mule" database="training" />
-	</db:config>
-	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="e4ca4cab-3590-4697-baf9-9fcd3b07c82b" basePath="/api/timezone" >
-		<http:request-connection host="worldtimeapi.org" port="80" />
-	</http:request-config>
-	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="93fc8914-b739-4c16-a266-07235b573ecc" />
+	
 	<flow name="getAllFlights" doc:id="695bb7e8-c353-4b2f-8e16-b58ee87fd3ac" >
-		<http:listener doc:name="GET /flights" doc:id="bd1d126f-79fd-4754-8fe1-dccddd38b162" config-ref="HTTP_Listener_config" path="/flights" allowedMethods="GET"/>
 		<set-variable value="#[message.attributes.queryParams.destination]" doc:name="Set Variable" doc:id="26ac34de-e828-4ec4-8951-24c97e62e48e" variableName="destination"/>
 		<choice doc:name="Choice" doc:id="a6e394b8-bfc9-44fa-a9d4-9da9634a4d27" >
 			<when expression="#[vars.destination == null]">
@@ -44,10 +34,10 @@ output application/json
 payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="92a41824-6b2b-4cbd-bf47-5648e930330f" message="${message.info}\n"/>
 		<logger level="INFO" doc:name="Log Fetched Flights ID" doc:id="f1e5cc67-7479-4f0b-8bfe-98106080dc40" message="#[payload.ID]" />
 	</sub-flow>
 	<flow name="getFlightByID" doc:id="d14be818-44f9-4fbd-b560-72731fac0539" >
-		<http:listener doc:name="GET /flights/{ID}" doc:id="12b72830-cf2d-4f8d-8d33-4276cce74932" config-ref="HTTP_Listener_config" path="/flights/{ID}" allowedMethods="GET" />
 		<set-variable value="#[message.attributes.uriParams.ID]" doc:name="Set Flight ID" doc:id="15835ea2-fec3-4768-862e-378a221759fd" variableName="flightid"/>
 		<validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="3c2e9c40-1a97-4b56-8ab2-57eade3c48dc" config-ref="Validation_Config" value="#[vars.flightid]" minValue="0"/>
 		<db:select doc:name="Select flight by ID" doc:id="716deaba-ab18-4632-99e1-5f839a0e7646" config-ref="Database_Config" >
